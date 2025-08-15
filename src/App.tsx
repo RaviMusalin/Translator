@@ -1,5 +1,5 @@
 
-import {useState} from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 
 interface Language {
@@ -18,7 +18,6 @@ const LANGUAGES: Language[] = [
 /**
  * TEMP translator for development:
  * - Pretends to translate after ~300ms
- * - Honors AbortSignal so we can cancel in-flight work
  * Replace this with a real fetch to /api/translate later.
  */
 
@@ -53,14 +52,53 @@ function App() {
   const [loading, setLoading] = useState<boolean>(false) // Boolean if we are waiting for translation
   const [error, setError] = useState<string>("") // If API fails
 
-   return (
+  useEffect(() => {
+    setError("")
+
+    if (!text.trim) {
+      setLoading(false)
+      setTranslation("")
+      return
+    }
+
+    setLoading(true)
+
+    const controller = new AbortController()
+
+    const delayId = setTimeout(async () => {
+      try {
+        const result = await mockTranslate({
+          q: text,
+          source: sourceLang,
+          target: targetLang,
+          signal: controller.signal,
+        });
+        setTranslation(result);
+      } catch (e: any) {
+        if (e?.name !== "AbortError") {
+          setError("Translation failed. Please try again.");
+        }
+      } finally {
+        setLoading(false);
+      }
+    }, 1000);
+
+    return () => {
+      clearTimeout(delayId);  // cancel the debounce if user types again
+      controller.abort();     // cancel any in-flight translate call
+    };
+
+
+  }, [text, sourceLang, targetLang])
+
+  return (
     <>
       <h1>Instant Translator</h1>
       <p>React + Typescript practice</p>
 
-      <div style={{display: "flex", gap: "1rem", marginBottom: "1rem"}}>
+      <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
         <select value={sourceLang} onChange={(e) => setSourceLang(e.target.value)}>
-          {LANGUAGES.map((lang) => 
+          {LANGUAGES.map((lang) =>
             <option key={lang.code} value={lang.code}>
               {lang.name}
             </option>
@@ -68,7 +106,7 @@ function App() {
         </select>
 
         <select value={targetLang} onChange={(e) => setTargetLang(e.target.value)}>
-          {LANGUAGES.map((lang) => 
+          {LANGUAGES.map((lang) =>
             <option key={lang.code} value={lang.code}>
               {lang.name}
             </option>
@@ -78,13 +116,13 @@ function App() {
 
       <textarea
         rows={5}
-        style={{width: "100%"}}
+        style={{ width: "100%" }}
         placeholder='Type Something...'
         value={text}
         onChange={(e) => setText(e.target.value)}
       />
 
-      <div style={{ marginTop: "1rem", minHeight: "2rem"}}>
+      <div style={{ marginTop: "1rem", minHeight: "2rem" }}>
         {loading ? <em>Translating...</em> : translation}
         {error && <p style={{ color: "red" }}>{error}</p>}
       </div>
