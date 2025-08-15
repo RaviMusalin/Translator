@@ -15,12 +15,42 @@ const LANGUAGES: Language[] = [
   { code: "it", name: "Italian" },
 ]
 
+/**
+ * TEMP translator for development:
+ * - Pretends to translate after ~300ms
+ * - Honors AbortSignal so we can cancel in-flight work
+ * Replace this with a real fetch to /api/translate later.
+ */
+
+function mockTranslate({
+  q, source, target, signal,
+}: {
+  q: string; source: string; target: string; signal?: AbortSignal;
+}): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      resolve(q ? `${q} → [${source.toUpperCase()}→${target.toUpperCase()}]` : "");
+    }, 300);
+
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(Object.assign(new Error("Aborted"), { name: "AbortError" }));
+    };
+
+    if (signal) {
+      if (signal.aborted) return onAbort();
+      signal.addEventListener("abort", onAbort, { once: true });
+    }
+  });
+}
+
+
 function App() {
   const [sourceLang, setSourceLang] = useState<string>("en"); // Language user types in
   const [targetLang, setTargetLang] = useState<string>("es"); // output language
   const [text, setText] = useState<string>(""); // user input
   const [translation, setTranslation] = useState<string>(""); // translated user input (API translation result)
-  const [loading, setLoading] = useState<boolean>(true) // Boolean if we are waiting for translation
+  const [loading, setLoading] = useState<boolean>(false) // Boolean if we are waiting for translation
   const [error, setError] = useState<string>("") // If API fails
 
    return (
