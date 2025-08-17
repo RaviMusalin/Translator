@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import './App.css'
 
@@ -51,6 +50,17 @@ function App() {
   const [translation, setTranslation] = useState<string>(""); // translated user input (API translation result)
   const [loading, setLoading] = useState<boolean>(false) // Boolean if we are waiting for translation
   const [error, setError] = useState<string>("") // If API fails
+
+  const onSwap = () => {
+  setSourceLang((prev) => {
+    const oldSource = prev;
+    setTargetLang(oldSource);   // set target to old source
+    return targetLang;          // set source to old target
+  });
+  setTranslation("");           // avoid stale output
+  setError("");
+};
+
 
   useEffect(() => {
     setError("")
