@@ -76,6 +76,11 @@ function App() {
     const controller = new AbortController()
 
     const delayId = setTimeout(async () => {
+      if (sourceLang === targetLang) {
+      setTranslation(text);
+      setLoading(false);
+      return; // don't call mockTranslate/fetch
+    }
       try {
         const result = await mockTranslate({
           q: text,
@@ -114,6 +119,8 @@ function App() {
             </option>
           )}
         </select>
+
+<button type="button" onClick={onSwap} aria-label="Swap languages">⇄</button>
 
         <select value={targetLang} onChange={(e) => setTargetLang(e.target.value)}>
           {LANGUAGES.map((lang) =>
